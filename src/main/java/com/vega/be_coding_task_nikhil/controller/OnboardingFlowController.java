@@ -7,7 +7,7 @@ import java.util.UUID;
 import com.vega.be_coding_task_nikhil.model.dto.OnboardingFlowDTO;
 import com.vega.be_coding_task_nikhil.model.dto.TaskDTO;
 import com.vega.be_coding_task_nikhil.model.enums.InvestorType;
-import com.vega.be_coding_task_nikhil.service.OnboardingFlowService;
+import com.vega.be_coding_task_nikhil.service.onboardingFlow.OnboardingFlowServiceImpl;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
@@ -36,11 +36,11 @@ import org.springframework.web.bind.annotation.RestController;
 @Tag(name = "OnboardingFlowController", description = "The Onboarding Flow API")
 public class OnboardingFlowController {
 
-    private final OnboardingFlowService onboardingFlowService;
+    private final OnboardingFlowServiceImpl onboardingFlowServiceImpl;
 
     @Autowired
-    public OnboardingFlowController(OnboardingFlowService onboardingFlowService) {
-        this.onboardingFlowService = onboardingFlowService;
+    public OnboardingFlowController(OnboardingFlowServiceImpl onboardingFlowServiceImpl) {
+        this.onboardingFlowServiceImpl = onboardingFlowServiceImpl;
     }
 
     /**
@@ -57,7 +57,7 @@ public class OnboardingFlowController {
                     @ApiResponse(responseCode = "400", description = "Invalid input data")
             })
     public ResponseEntity<OnboardingFlowDTO> createOnboardingFlow(@Valid @RequestBody OnboardingFlowDTO onboardingFlowDTO) {
-        OnboardingFlowDTO createdOnboardingFlow = onboardingFlowService.createOnboardingFlow(onboardingFlowDTO);
+        OnboardingFlowDTO createdOnboardingFlow = onboardingFlowServiceImpl.createOnboardingFlow(onboardingFlowDTO);
         return new ResponseEntity<>(createdOnboardingFlow, HttpStatus.CREATED);
     }
 
@@ -70,7 +70,7 @@ public class OnboardingFlowController {
     public ResponseEntity<OnboardingFlowDTO> updateMinimumInvestment(
             @PathVariable UUID flowId,
             @RequestParam BigDecimal newMinimumInvestment) {
-        OnboardingFlowDTO updatedFlow = onboardingFlowService.updateMinimumInvestment(flowId, newMinimumInvestment);
+        OnboardingFlowDTO updatedFlow = onboardingFlowServiceImpl.updateMinimumInvestment(flowId, newMinimumInvestment);
         return ResponseEntity.ok(updatedFlow);
     }
 
@@ -83,7 +83,7 @@ public class OnboardingFlowController {
     public ResponseEntity<OnboardingFlowDTO> updateInvestorType(
             @PathVariable UUID flowId,
             @RequestParam InvestorType newInvestorType) {
-        OnboardingFlowDTO updatedFlow = onboardingFlowService.updateInvestorType(flowId, newInvestorType);
+        OnboardingFlowDTO updatedFlow = onboardingFlowServiceImpl.updateInvestorType(flowId, newInvestorType);
         return ResponseEntity.ok(updatedFlow);
     }
 
@@ -97,7 +97,7 @@ public class OnboardingFlowController {
     public ResponseEntity<OnboardingFlowDTO> addTaskToFlow(
             @PathVariable UUID flowId,
             @Valid @RequestBody TaskDTO newTask) {
-        OnboardingFlowDTO updatedFlow = onboardingFlowService.addTaskToFlow(flowId, newTask);
+        OnboardingFlowDTO updatedFlow = onboardingFlowServiceImpl.addTaskToFlow(flowId, newTask);
         return ResponseEntity.ok(updatedFlow);
     }
 
@@ -110,7 +110,7 @@ public class OnboardingFlowController {
     public ResponseEntity<OnboardingFlowDTO> removeTaskFromFlow(
             @PathVariable UUID flowId,
             @PathVariable UUID taskId) {
-        OnboardingFlowDTO updatedFlow = onboardingFlowService.removeTaskFromFlow(flowId, taskId);
+        OnboardingFlowDTO updatedFlow = onboardingFlowServiceImpl.removeTaskFromFlow(flowId, taskId);
         return ResponseEntity.ok(updatedFlow);
     }
 
@@ -124,7 +124,7 @@ public class OnboardingFlowController {
     public ResponseEntity<OnboardingFlowDTO> updateTaskInFlow(
             @PathVariable UUID flowId,
             @Valid @RequestBody TaskDTO updatedTask) {
-        OnboardingFlowDTO updatedFlow = onboardingFlowService.updateTaskInFlow(flowId, updatedTask);
+        OnboardingFlowDTO updatedFlow = onboardingFlowServiceImpl.updateTaskInFlow(flowId, updatedTask);
         return ResponseEntity.ok(updatedFlow);
     }
 }
