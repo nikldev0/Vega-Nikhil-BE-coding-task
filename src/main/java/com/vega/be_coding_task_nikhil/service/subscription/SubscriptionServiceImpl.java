@@ -4,6 +4,7 @@ import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
 
+import com.vega.be_coding_task_nikhil.exception.ResourceNotFoundException;
 import com.vega.be_coding_task_nikhil.model.dto.FundSubscriptionDTO;
 import com.vega.be_coding_task_nikhil.model.dto.SubscriptionDTO;
 import com.vega.be_coding_task_nikhil.model.dto.SubscriptionInvestmentDTO;
@@ -23,9 +24,11 @@ import com.vega.be_coding_task_nikhil.repository.QuestionResponseRepository;
 import com.vega.be_coding_task_nikhil.repository.SubscriptionRepository;
 import com.vega.be_coding_task_nikhil.repository.TaskRepository;
 import com.vega.be_coding_task_nikhil.repository.TaskResponseRepository;
+import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.beans.factory.annotation.Autowired;
 
+@Service
 public class SubscriptionServiceImpl implements SubscriptionService {
 
     private final SubscriptionRepository subscriptionRepository;
@@ -59,15 +62,14 @@ public class SubscriptionServiceImpl implements SubscriptionService {
     @Override
     public SubscriptionDTO subscribeToFund(UUID investorId, UUID fundId) {
         Investor investor = investorRepository.findById(investorId)
-                .orElseThrow(() -> new RuntimeException("Investor not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("Investor not found"));
 
         Fund fund = fundRepository.findById(fundId)
-                .orElseThrow(() -> new RuntimeException("Fund not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("Fund not found"));
 
         // Check if the investor already has a subscription to this fund
-        boolean alreadySubscribed = subscriptionRepository.existsByInvestorAndFund(investor, fund);
-        if (alreadySubscribed) {
-            throw new RuntimeException("Investor is already subscribed to this fund");
+        if (subscriptionRepository.existsByInvestorAndFund(investor, fund)) {
+            throw new IllegalStateException("Investor is already subscribed to this fund");
         }
 
         // Create a new subscription
@@ -82,7 +84,7 @@ public class SubscriptionServiceImpl implements SubscriptionService {
 
         // Create TaskResponses for each task in the fund's onboarding flow
         OnboardingFlow onboardingFlow = onboardingFlowRepository.findByFundAndInvestorType(fund, investor.getType())
-                .orElseThrow(() -> new RuntimeException("Onboarding flow not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("Onboarding flow not found"));
 
         onboardingFlow.getTasks().forEach(task -> {
             TaskResponse taskResponse = new TaskResponse();
