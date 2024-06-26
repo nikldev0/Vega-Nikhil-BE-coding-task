@@ -6,6 +6,7 @@ import java.util.List;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
+import com.vega.be_coding_task_nikhil.exception.ResourceNotFoundException;
 import com.vega.be_coding_task_nikhil.model.dto.OnboardingFlowDTO;
 import com.vega.be_coding_task_nikhil.model.dto.TaskDTO;
 import com.vega.be_coding_task_nikhil.model.entity.Fund;
@@ -46,29 +47,29 @@ public class OnboardingFlowServiceImpl implements OnboardingFlowService {
     /**
      * Creates a new onboarding flow using the provided DTO and persists it to the database.
      *
-     * @param onboardingFlowDTO the data transfer object containing the necessary data
+     * @param dto the data transfer object containing the necessary data
      * @return the created OnboardingFlowDTO with persisted data
      */
     @Transactional
-    public OnboardingFlowDTO createOnboardingFlow(OnboardingFlowDTO onboardingFlowDTO) {
-        Fund fund = fundRepository.findById(onboardingFlowDTO.fundId())
-                .orElseThrow(() -> new RuntimeException("Fund not found"));
+    @Override
+    public OnboardingFlowDTO createOnboardingFlow(OnboardingFlowDTO dto) {
+        Fund fund = fundRepository.findById(dto.fundId())
+                .orElseThrow(() -> new ResourceNotFoundException("Fund not found"));
 
         OnboardingFlow onboardingFlow = new OnboardingFlow();
-
         onboardingFlow.setFund(fund);
-        onboardingFlow.setInvestorType(onboardingFlowDTO.investorType());
-        onboardingFlow.setMinimumInvestment(onboardingFlowDTO.minimumInvestment());
-        onboardingFlow.setTasks(convertTasksDtoToEntity(onboardingFlowDTO.taskIds()));
+        onboardingFlow.setInvestorType(dto.investorType());
+        onboardingFlow.setMinimumInvestment(dto.minimumInvestment());
+        onboardingFlow.setTasks(convertTasksDtoToEntity(dto.taskIds()));
 
         try {
             OnboardingFlow savedFlow = onboardingFlowRepository.save(onboardingFlow);
-            return mapOnboardingFlowEntityToDTO(savedFlow);
+            return convertToDTO(savedFlow);
         } catch (DataIntegrityViolationException e) {
             throw new RuntimeException("Database error: " + e.getMessage());
         }
-
     }
+
 
     /**
      * Converts the OnboardingFlow entity to its corresponding DTO.
@@ -93,11 +94,12 @@ public class OnboardingFlowServiceImpl implements OnboardingFlowService {
      * @return List of Task entities
      */
     private List<Task> convertTasksDtoToEntity(List<UUID> taskIds) {
-        // This should retrieve existing tasks based on ids or create new tasks if necessary
+        // This should retrieve and collect existing tasks based on ids or create new tasks if necessary
         return taskIds.stream()
-                .map(id -> taskRepository.findById(id).orElseThrow(() -> new RuntimeException("Task not found")))
+                .map(this::findTaskById)
                 .collect(Collectors.toList());
     }
+
 
     /**
      * Updates the minimum investment amount for the specified onboarding flow.
@@ -108,12 +110,11 @@ public class OnboardingFlowServiceImpl implements OnboardingFlowService {
      * @throws RuntimeException If the onboarding flow is not found.
      */
     @Transactional
+    @Override
     public OnboardingFlowDTO updateMinimumInvestment(UUID flowId, BigDecimal newMinimumInvestment) {
-        OnboardingFlow onboardingFlow = onboardingFlowRepository.findById(flowId)
-                .orElseThrow(() -> new RuntimeException("Onboarding Flow not found"));
+        OnboardingFlow onboardingFlow = findOnboardingFlowById(flowId);
         onboardingFlow.setMinimumInvestment(newMinimumInvestment);
-        OnboardingFlow savedFlow = onboardingFlowRepository.save(onboardingFlow);
-        return mapOnboardingFlowEntityToDTO(savedFlow);
+        return convertToDTO(onboardingFlowRepository.save(onboardingFlow));
     }
 
     /**
@@ -125,12 +126,11 @@ public class OnboardingFlowServiceImpl implements OnboardingFlowService {
      * @throws RuntimeException If the onboarding flow is not found.
      */
     @Transactional
+    @Override
     public OnboardingFlowDTO updateInvestorType(UUID flowId, InvestorType newInvestorType) {
-        OnboardingFlow onboardingFlow = onboardingFlowRepository.findById(flowId)
-                .orElseThrow(() -> new RuntimeException("Onboarding Flow not found"));
+        OnboardingFlow onboardingFlow = findOnboardingFlowById(flowId);
         onboardingFlow.setInvestorType(newInvestorType);
-        OnboardingFlow savedFlow = onboardingFlowRepository.save(onboardingFlow);
-        return mapOnboardingFlowEntityToDTO(savedFlow);
+        return convertToDTO(onboardingFlowRepository.save(onboardingFlow));
     }
 
     /**
@@ -142,22 +142,18 @@ public class OnboardingFlowServiceImpl implements OnboardingFlowService {
      * @throws RuntimeException If the onboarding flow is not found.
      */
     @Transactional
+    @Override
     public OnboardingFlowDTO addTaskToFlow(UUID flowId, TaskDTO newTaskDTO) {
-        OnboardingFlow onboardingFlow = onboardingFlowRepository.findById(flowId)
-                .orElseThrow(() -> new RuntimeException("Onboarding Flow not found"));
-
+        OnboardingFlow onboardingFlow = findOnboardingFlowById(flowId);
         Task newTask = new Task();
         newTask.setOnboardingFlow(onboardingFlow);
         newTask.setDescription(newTaskDTO.description());
-
-        // Convert question IDs to Question entities
-        List<Question> questions = convertQuestionIdsToEntities(newTaskDTO.questionIds(), newTask);
-        newTask.setQuestions(questions);
+        newTask.setQuestions(convertQuestionIdsToEntities(newTaskDTO.questionIds(), newTask));
 
         onboardingFlow.getTasks().add(newTask);
-        OnboardingFlow savedFlow = onboardingFlowRepository.save(onboardingFlow);
-        return mapOnboardingFlowEntityToDTO(savedFlow);
+        return convertToDTO(onboardingFlowRepository.save(onboardingFlow));
     }
+
 
     /**
      * Converts a list of question IDs to Question entities.
@@ -170,7 +166,7 @@ public class OnboardingFlowServiceImpl implements OnboardingFlowService {
     private List<Question> convertQuestionIdsToEntities(List<UUID> questionIds, Task task) {
         return questionIds.stream()
                 .map(id -> questionRepository.findById(id)
-                        .orElseThrow(() -> new RuntimeException("Question not found for ID: " + id)))
+                        .orElseThrow(() -> new ResourceNotFoundException("Question not found for ID: " + id)))
                 .peek(question -> question.setTask(task))
                 .collect(Collectors.toList());
     }
@@ -184,18 +180,14 @@ public class OnboardingFlowServiceImpl implements OnboardingFlowService {
      * @throws RuntimeException If the onboarding flow or task is not found.
      */
     @Transactional
+    @Override
     public OnboardingFlowDTO removeTaskFromFlow(UUID flowId, UUID taskId) {
-        OnboardingFlow onboardingFlow = onboardingFlowRepository.findById(flowId)
-                .orElseThrow(() -> new RuntimeException("Onboarding Flow not found"));
-
-        Task task = taskRepository.findById(taskId)
-                .orElseThrow(() -> new RuntimeException("Task not found"));
+        OnboardingFlow onboardingFlow = findOnboardingFlowById(flowId);
+        Task task = findTaskById(taskId);
 
         onboardingFlow.getTasks().remove(task);
         taskRepository.delete(task);
-
-        OnboardingFlow savedFlow = onboardingFlowRepository.save(onboardingFlow);
-        return mapOnboardingFlowEntityToDTO(savedFlow);
+        return convertToDTO(onboardingFlowRepository.save(onboardingFlow));
     }
 
     /**
@@ -207,22 +199,37 @@ public class OnboardingFlowServiceImpl implements OnboardingFlowService {
      * @throws RuntimeException If the onboarding flow or task is not found.
      */
     @Transactional
+    @Override
     public OnboardingFlowDTO updateTaskInFlow(UUID flowId, TaskDTO updatedTaskDTO) {
-        OnboardingFlow onboardingFlow = onboardingFlowRepository.findById(flowId)
-                .orElseThrow(() -> new RuntimeException("Onboarding Flow not found"));
-
-        Task task = taskRepository.findById(updatedTaskDTO.taskId())
-                .orElseThrow(() -> new RuntimeException("Task not found"));
+        OnboardingFlow onboardingFlow = findOnboardingFlowById(flowId);
+        Task task = findTaskById(updatedTaskDTO.taskId());
 
         task.setDescription(updatedTaskDTO.description());
-
-        // Update the questions associated with the task
-        List<Question> updatedQuestions = convertQuestionIdsToEntities(updatedTaskDTO.questionIds(), task);
-        task.setQuestions(updatedQuestions);
-
+        task.setQuestions(convertQuestionIdsToEntities(updatedTaskDTO.questionIds(), task));
         taskRepository.save(task);
 
-        return mapOnboardingFlowEntityToDTO(onboardingFlow);
+        return convertToDTO(onboardingFlow);
     }
+
+    private OnboardingFlow findOnboardingFlowById(UUID flowId) {
+        return onboardingFlowRepository.findById(flowId)
+                .orElseThrow(() -> new ResourceNotFoundException("Onboarding Flow not found"));
+    }
+
+    private Task findTaskById(UUID taskId) {
+        return taskRepository.findById(taskId)
+                .orElseThrow(() -> new ResourceNotFoundException("Task not found"));
+    }
+
+    private OnboardingFlowDTO convertToDTO(OnboardingFlow onboardingFlow) {
+        return new OnboardingFlowDTO(
+                onboardingFlow.getFlowId(),
+                onboardingFlow.getFund().getFundId(),
+                onboardingFlow.getInvestorType(),
+                onboardingFlow.getTasks().stream().map(Task::getTaskId).collect(Collectors.toList()),
+                onboardingFlow.getMinimumInvestment()
+        );
+    }
+
 }
 
