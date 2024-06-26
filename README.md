@@ -61,5 +61,6 @@ As the introduction of the Subscription entity is the most significant change I'
 3. Have a clear approach on what the details JSONB on the Investor entity can be. I went with a simplified approach that converts the Individual and Investor details DTOs into JSON here: https://github.com/nikldev0/Vega-Nikhil-BE-coding-task/blob/029d8a5e9486ba9bad787d2dc80202cf3cb6a607/src/main/java/com/vega/be_coding_task_nikhil/service/investor/InvestorServiceImpl.java#L62
 but a more defensive approach may have been to outline some kind of validation schema for this JSON.
 4. Get a containerised test database running and verify endpoints using Swagger UI. Again due to time constraints I couldn't get that spinning up but would be the obvious next step.
+5. Consider using mapping libaries when transferring between DTOs and Entities rather than plain java.
 
 
