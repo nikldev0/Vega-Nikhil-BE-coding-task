@@ -36,10 +36,10 @@ public interface SubscriptionRepository extends JpaRepository<Subscription, UUID
     /**
      * Finds the state of active subscriptions with the total intended investment volume per subscription.
      *
-     * <p>This method executes a JPQL query that selects new instances of the {@link SubscriptionInvestmentDTO}
+     * This method executes a JPQL query that selects new instances of the {@link SubscriptionInvestmentDTO}
      * class, containing the subscription ID, investor ID, fund ID, fund name, total investment volume, and subscription status.
      * It filters the subscriptions to include only those with an {@code ACTIVE} status and groups the results by subscription ID,
-     * investor ID, fund ID, fund name, and status.</p>
+     * investor ID, fund ID, fund name, and status.
      *
      *
      * @return a list of {@link SubscriptionInvestmentDTO} instances containing the subscription ID, investor ID,

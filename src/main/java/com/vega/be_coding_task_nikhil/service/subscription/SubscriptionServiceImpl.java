@@ -82,7 +82,7 @@ public class SubscriptionServiceImpl implements SubscriptionService {
 
         Subscription savedSubscription = subscriptionRepository.save(subscription);
 
-        // Create TaskResponses for each task in the fund's onboarding flow
+        // Create TaskResponses for each task in the fund's onboarding flow, assumption made for simplicity that a fund can only have a single instance of a certain investor subscription to it
         OnboardingFlow onboardingFlow = onboardingFlowRepository.findByFundAndInvestorType(fund, investor.getType())
                 .orElseThrow(() -> new ResourceNotFoundException("Onboarding flow not found"));
 
